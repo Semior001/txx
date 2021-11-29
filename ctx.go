@@ -6,6 +6,10 @@ import (
 
 type runnerKey struct{}
 
+func cleanRunner(ctx context.Context) context.Context {
+	return context.WithValue(ctx, runnerKey{}, nil)
+}
+
 func putRunner(ctx context.Context, r Runner) context.Context {
 	return context.WithValue(ctx, runnerKey{}, r)
 }

@@ -43,8 +43,8 @@ func NewTxManager(drv driver.Driver, dsn string) (*sql.DB, *TxManager) {
 		ExecContextHandler:    txm.execContext,
 	})
 
-	db := sql.OpenDB(conn)
-	return db, txm
+	txm.db = sql.OpenDB(conn)
+	return txm.db, txm
 }
 
 // Tx runs the fn in the transaction.
@@ -67,6 +67,8 @@ func (m *TxManager) Tx(ctx context.Context, opts *sql.TxOptions, fn func(context
 	err = conn.Raw(func(driverConn interface{}) error {
 		dc, ok := driverConn.(Runner)
 		if !ok {
+			// since we wrap the connection of the underlying driver with
+			// proxy.conn, driverConn must implement the Runner
 			panic("driverConn passed from Raw is not a Runner")
 		}
 
@@ -107,7 +109,7 @@ func (m *TxManager) queryContext(next driver.QueryerContext) driver.QueryerConte
 	return proxy.QueryContextFunc(
 		func(ctx context.Context, q string, args []driver.NamedValue) (driver.Rows, error) {
 			if tx := getTx(ctx); tx != nil {
-				return tx.QueryContext(ctx, q, args)
+				return tx.QueryContext(cleanRunner(ctx), q, args)
 			}
 			return next.QueryContext(ctx, q, args)
 		})
@@ -117,7 +119,7 @@ func (m *TxManager) prepareContext(next driver.ConnPrepareContext) driver.ConnPr
 	return proxy.PrepareContextFunc(
 		func(ctx context.Context, q string) (driver.Stmt, error) {
 			if tx := getTx(ctx); tx != nil {
-				return tx.PrepareContext(ctx, q)
+				return tx.PrepareContext(cleanRunner(ctx), q)
 			}
 			return next.PrepareContext(ctx, q)
 		})
@@ -127,7 +129,7 @@ func (m *TxManager) execContext(next driver.ExecerContext) driver.ExecerContext 
 	return proxy.ExecContextFunc(
 		func(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 			if tx := getTx(ctx); tx != nil {
-				return tx.ExecContext(ctx, query, args)
+				return tx.ExecContext(cleanRunner(ctx), query, args)
 			}
 			return next.ExecContext(ctx, query, args)
 		})
