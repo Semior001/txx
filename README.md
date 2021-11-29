@@ -1,4 +1,4 @@
-# txx
+# [WIP] txx
 Simple library to proxy request to database in order to make calls transactional.
 
 Have you ever thought, that Go lacks the Java's `@Transactional` kludge in it? 
