@@ -8,7 +8,7 @@ opportunity to be run in transaction.
 
 That implies that only contextual database methods are supported.
 
-For using the `TxManager` you have `driver.Driver` to be exported and passed.
+For using the `TxManager` you have `driver.Driver` to be exported and passed
 to the `NewTxManager`.
 
 **Warning:** despite that this package is quite handy, I strongly do not recommend
@@ -73,8 +73,8 @@ func (f *TransactionalFactory) Tx(ctx context.Context, fn func(ctx context.Conte
 The `sql.Tx` struct under the cover is just an aggregate of the `driver.Tx` 
 and a connection to the database. Thus, all calls passed to the `sql.Tx` object are
 just calls to the underlying connection. `TxManager` acquires a dedicated connection 
-from the `sql.DB`, calls its `BeginTx` method, extracts the underlying `driver.Tx`
-object from it, puts it to the context and calls the wrapped lambda. Then, when the 
+from the `sql.DB`, calls its `BeginTx` method, extracts the underlying `driver.Conn`
+object from it, puts it into a context and calls the wrapped lambda. Then, when the 
 `proxy.Connector`, which wraps the given SQL driver's connector, receives a call,
 it checks the provided context for a `driver.Conn`, and, if it has, it hijacks
 the call and passes it to the connection taken from the context.
